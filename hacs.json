@@ -1,6 +1,5 @@
 {
     "name": "VDR-Connector",
     "render_readme": true,
-    "filename": "sensor.py",
     "content_in_root": true
 }
