@@ -1,10 +1,9 @@
 {
-    "domain": "vdr",
-    "name": "Your Integration",
+    "domain": "tgvdr",
+    "name": "tgVdrConnector",
     "documentation": "https://www.example.com",
     "dependencies": [],
-    "codeowners": ["@bquietcry"],
-    "_comment_requirements": ["pyvdr==0.3.1"],
+    "codeowners": ["@quietcry"],
     "config_flow": false,
     "version": "v0.0.1"
 }
