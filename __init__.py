@@ -1,0 +1,1 @@
+"""Video Disk Recorder integration."""

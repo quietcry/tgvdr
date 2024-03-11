@@ -1,0 +1,10 @@
+{
+    "domain": "vdr",
+    "name": "Your Integration",
+    "documentation": "https://www.example.com",
+    "dependencies": [],
+    "codeowners": ["@bquietcry"],
+    "_comment_requirements": ["pyvdr==0.3.1"],
+    "config_flow": false,
+    "version": "v0.0.1"
+}
