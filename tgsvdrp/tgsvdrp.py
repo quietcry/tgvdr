@@ -18,7 +18,7 @@ class SVDRP_COMMANDS(str, Enum):
     QUIT = "quit"
     LIST_TIMERS = "LSTT"
     GET_CHANNEL = "CHAN"
-    GET_CHANNELS = "LSTC :ids"
+    GET_CHANNELS = "LSTC :ids :groups"
     DISK_INFO = "STAT DISK"
     LIST_RECORDINGS = "LSTR"
     LIST_EPG = "LSTE"

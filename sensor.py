@@ -1,5 +1,6 @@
 import logging
 import json
+import time
 
 from datetime import timedelta
 from datetime import datetime
@@ -58,12 +59,14 @@ SENSOR_TYPE_DISKUSAGE = "diskusage"
 SENSOR_TYPE_RECINFO = "recinfo"
 SENSOR_TYPE_VDRINFO = "vdrinfo"
 SENSOR_TYPE_VDREPG = "vdrepg"
+SENSOR_TYPE_TIMERS = "timer"
 
 SENSOR_TYPES = {
     SENSOR_TYPE_VDREPG: ["EPG Info", "mdi:television-box", ""],
     SENSOR_TYPE_VDRINFO: ["Channel Info", "mdi:television-box", ""],
     SENSOR_TYPE_DISKUSAGE: ["Disk usage", "mdi:harddisk", PERCENTAGE],
     SENSOR_TYPE_RECINFO: ["Recording", "mdi:close-circle-outline", ""],
+    SENSOR_TYPE_TIMERS: ["Timer", "mdi:close-circle-outline", ""],
 }
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=5)
@@ -103,8 +106,6 @@ class VdrSensor(Entity):
             [conf_name.capitalize(), SENSOR_TYPES[sensor_type][ATTR_SENSOR_NAME]]
         )
         self.runUpdateFactor = MIN_COUNTS_UPDATE
-        if self._sensor_type == SENSOR_TYPE_VDREPG:
-            self.runUpdateFactor = MIN_COUNTS_UPDATE_EPG
 
         self._Runs = 0
         self._pyvdr = pyvdr
@@ -232,14 +233,58 @@ class VdrSensor(Entity):
                 self._attributes = {}
                 self._state = STATE_OFF
             return
+        def get_timerlist(self):
+            timers=list()
+            nextTimer=-1
+            listPos=-1
+            
+            response = self._pyvdr.get_timers()
+            if response is not None:
+                for resp in response:
+                    timers.append(resp)
+                    s=resp.get("start")
+                    s=s[:2] + ':' + s[2:]
+                    s=resp.get("date")+" "+s
+                    timer=time.mktime(datetime.strptime(s, "%Y-%m-%d %H:%M").timetuple())
+                    if nextTimer < 0 or nextTimer > timer:
+                        nextTimer=timer
+                        listPos=len(timers)-1
+                if listPos > -1:
+                    timers[listPos]["nextTimer"]=True
+                    timers[listPos]["nextTimerTime"]=s
+            return timers
+        
+        if self._sensor_type == SENSOR_TYPE_TIMERS:
+            response = get_timerlist(self)
+            state=STATE_OFF
+            if len(response) > 0:
+                state="no Timers defined"
+                self._set_attributes(
+                    "timer",
+                    json.dumps(response)
+                )               
+                for resp in response:
+                    key="nextTimer"
+                    if key in resp and resp.get(key):
+                        state = "next of ["+str(len(response))+"] : " + resp.get("nextTimerTime")+" - "+resp.get("name")
+                        break 
+            self._state=state 
+            return
 
         if self._sensor_type == SENSOR_TYPE_VDREPG:
             _LOGGER.info(f"UPDATE VDR SENSOR {self._sensor_type}")
             _LOGGER.debug(f"UPDATE VDR SENSOR {self._sensor_type}")
+            self._set_attributes(
+                "timers",
+                json.dumps(get_timerlist(self)),
+                )
+            
             response = self._pyvdr.get_channels()
-            if response is None:
+            if response is None:              
+                self.runUpdateFactor = MIN_COUNTS_UPDATE
                 return
             _LOGGER.debug(f"UPDATE VDR SENSOR Result: {response}")
+            self.runUpdateFactor = MIN_COUNTS_UPDATE_EPG
 
             current_datetime = datetime.now()
             updateTime = current_datetime.strftime("%m/%d/%Y, %H:%M:%S")
